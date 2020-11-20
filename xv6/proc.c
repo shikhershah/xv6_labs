@@ -88,6 +88,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->priority = 10;  // default
 
   release(&ptable.lock);
 
@@ -327,7 +328,9 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
+ 
+  int prev_prior = 32;
+  int temp = 32;
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -337,6 +340,25 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+      
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state != RUNNABLE)
+           continue; 
+           if (p->priority < prev_prior) {
+              prev_prior = p->priority;       
+           }
+           else {
+               temp = p->priority;      
+           }
+       }
+   }
+
+     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if (p->state != RUNNABLE){
+        continue;
+      }
+      
+       if (prev_prior == p->priority) { // run if priorities match
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -347,10 +369,19 @@ scheduler(void)
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
-
+       for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if (p->state != RUNNABLE){
+        continue;
+      }
+       if(temp > prev_prior) {
+          prev_prior = temp; 
+       }
+      }
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
+     // prev_prior = 32;
+      }
     }
     release(&ptable.lock);
 
@@ -599,8 +630,11 @@ struct proc *p;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->pid != pid) 
         continue;
-      havekids = 1;
       
+      	havekids = 1;
+      
+  
+  
       if(p->state == ZOMBIE){
         *status = p->status; //added
 
@@ -616,14 +650,26 @@ struct proc *p;
         release(&ptable.lock);
         return pid;
       }
+     
     }
+
 // No point waiting if we don't have any children.
     if(!havekids || curproc->killed){
       release(&ptable.lock);
-      return -1;
+    return -1;
     }
 // Wait for children to exit.  (See wakeup1 call in proc_exit.)
  sleep(curproc, &ptable.lock);  //DOC: wait-sleep
  
   }
 }
+
+int prior( int setPriority) {
+  struct proc  *curproc = myproc();
+  acquire(&ptable.lock);
+  curproc->prior_lvl = setPriority;
+  release(&ptable.lock);
+  return 0;
+
+}
+

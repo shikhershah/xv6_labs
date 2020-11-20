@@ -184,6 +184,7 @@ UPROGS=\
         _helloworld\
 	_exittest\
 	_lab1\
+        _lab2\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

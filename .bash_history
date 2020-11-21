@@ -1,16 +1,3 @@
-ls
-cd xvg
-cd xv6
-ls
-vim bootasm.S 
-vim echo.c
-echo
-gqd-q
-gdq -q
-gdb
-make qemu-nox-gdb
-cd xv6
-make
 gdb -q
 vim echo.c
 make qemu-nox
@@ -998,3 +985,16 @@ make clean
 make qemu-nox
 cd
 ~.
+cd xv6
+ls
+vim sysproc.c
+vim proc.c
+make clean
+make qemu-nox
+cd
+ls
+git add
+git add .
+git commit -m "scheduler" 
+git branch
+git push

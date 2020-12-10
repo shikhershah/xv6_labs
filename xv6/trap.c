@@ -14,6 +14,9 @@ extern uint vectors[];  // in vectors.S: array of 256 entry pointers
 struct spinlock tickslock;
 uint ticks;
 
+uint sp;
+pde_t *pgdir;
+
 void
 tvinit(void)
 {
@@ -36,6 +39,9 @@ idtinit(void)
 void
 trap(struct trapframe *tf)
 {
+uint address;
+
+
   if(tf->trapno == T_SYSCALL){
     if(myproc()->killed)
       exit();
@@ -77,7 +83,23 @@ trap(struct trapframe *tf)
             cpuid(), tf->cs, tf->eip);
     lapiceoi();
     break;
+ 
+  case T_PGFLT:
+   //cprintf("We get a page fault");  
+  //sp = tf-;
+   
+    address = rcr2();
+   if( (address <  (STACKBASE - myproc()->numStackPages * PGSIZE) )) { //&& (address >  (STACKBASE - (myproc()->numStackPages+1 * PGSIZE) ) ) ) { //checks if address is out of first page but within second 
+     
+          allocuvm(myproc()->pgdir, PGROUNDDOWN(address), address);
+	  myproc()->numStackPages = myproc()->numStackPages + 1;  
+          cprintf("Increased stack size \n ");   
+     // }
+    }
 
+  break;
+
+   
   //PAGEBREAK: 13
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){

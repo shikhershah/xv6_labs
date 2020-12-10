@@ -52,6 +52,8 @@ struct proc {
   int status;		       // exit status
   int priority;                // add priority to process
   int prior_lvl;               // previous priority  
+  uint numStackPages;
+
 };
 
 // Process memory is laid out contiguously, low addresses first:

@@ -234,6 +234,9 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
     mem = kalloc();
     if(mem == 0){
       cprintf("allocuvm out of memory\n");
+      cprintf("\n\nAddress of Stack: %x\n", myproc()->tf->esp);
+      cprintf("Address of user space: %x\n", myproc()->sz);
+      cprintf("Address of user space (plus guard): %x\n\n", myproc()->sz+PGSIZE);
       deallocuvm(pgdir, newsz, oldsz);
       return 0;
     }
@@ -317,9 +320,10 @@ copyuvm(pde_t *pgdir, uint sz)
 {
   pde_t *d;
   pte_t *pte;
-  uint pa, i, flags;
+  uint pa, i, flags, j;
   char *mem;
 
+//  j = (USERBASE - PGSIZE) + 1 ;
   if((d = setupkvm()) == 0)
     return 0;
   for(i = 0; i < sz; i += PGSIZE){
@@ -337,12 +341,29 @@ copyuvm(pde_t *pgdir, uint sz)
       goto bad;
     }
   }
+
+  for (j = STACKBASE - myproc()->numStackPages*PGSIZE + 4; j < STACKBASE; j+=PGSIZE) {
+    if((pte = walkpgdir(pgdir, (void *) j, 0)) == 0)
+      panic("copyuvm2: pte should exist");
+    if(!(*pte & PTE_P))
+      panic("copyuvm2: page not present");
+    pa = PTE_ADDR(*pte);
+    flags = PTE_FLAGS(*pte);
+    if((mem = kalloc()) == 0)
+      goto bad;
+    memmove(mem, (char*)P2V(pa), PGSIZE);
+    if(mappages(d, (void*)j, PGSIZE, V2P(mem), flags) < 0) {
+      kfree(mem);
+      goto bad;
+    }
+  }
+
   return d;
 
 bad:
   freevm(d);
   return 0;
-}
+ }
 
 //PAGEBREAK!
 // Map user virtual address to kernel address.

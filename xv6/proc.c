@@ -329,17 +329,14 @@ scheduler(void)
   struct cpu *c = mycpu();
   c->proc = 0;
  
-  int prev_prior = 32;
-  int temp = 32;
+  int prev_prior = 31;
+  //int temp = 32;
   for(;;){
     // Enable interrupts on this processor.
     sti();
-
+  
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
       
       for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
         if(p->state != RUNNABLE)
@@ -347,14 +344,12 @@ scheduler(void)
            if (p->priority < prev_prior) {
               prev_prior = p->priority;       
            }
-           else {
-               temp = p->priority;      
-           }
+         
        }
-   }
+   
 
      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if (p->state != RUNNABLE){
+      if (p->state != RUNNABLE){// || prev_prior != p->priority){
         continue;
       }
       
@@ -369,19 +364,19 @@ scheduler(void)
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
-       for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      /* for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if (p->state != RUNNABLE){
         continue;
       }
        if(temp > prev_prior) {
           prev_prior = temp; 
        }
-      }
+      }*/
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
      // prev_prior = 32;
-      }
+     }
     }
     release(&ptable.lock);
 

@@ -59,7 +59,8 @@ exec(char *path, char **argv)
   iunlockput(ip);
   end_op();
   ip = 0;
-
+/*
+ 
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the user stack.
   sz = PGROUNDUP(sz);
@@ -67,6 +68,23 @@ exec(char *path, char **argv)
     goto bad;
   clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
   sp = sz;
+
+*/
+  sp = 0;
+
+  sz = PGROUNDUP(sz);
+  //if((sz = allocuvm(pgdir,sz,sz + PGSIZE)) == 0)  //buffer
+   // goto bad;
+  //clearpteu(pgdir, (char*)(sz - PGSIZE));
+ 
+  
+  sp = STACKBASE; // right under kernel base sp = stack pointer 
+
+  if( (sp = allocuvm(pgdir, sp - PGSIZE, sp)) == 0)//create one page allocuvm returns start of allocated memory  
+    goto bad;
+
+  curproc->numStackPages = 1; //counter
+ 
 
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
